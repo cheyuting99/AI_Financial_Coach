@@ -132,10 +132,9 @@ h2 {
 }
 
 .pie-chart {
-  flex: 1;
-  min-height: 200px;
+  width: 100%;
+  min-height: 300px; /* Ensures a minimum height even if the inline style fails */
 }
-
 /* AI Suggestion Box */
 .ai-suggestion {
   flex: 1;
@@ -291,7 +290,7 @@ h2 {
   right: 0;
   bottom: 70px; 
   z-index: 999; 
-  background-color: rgb(233, 248, 255);
+  background-color: rgb(233, 248, 255, 0.9);
   display: flex;
   justify-content: center;
   opacity: 0;
@@ -340,7 +339,16 @@ h2 {
   font-size: 36px;
   cursor: pointer;
   text-shadow: 0 2px 4px rgba(255,255,255,0.8); /* Helps it stand out */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease; /* Animate the transform property */
+  transform-origin: center; /* Ensures it grows from the middle */
 }
+.close-btn:hover {
+  transform: scale(1.2);
+}
+
 .chatbot-body {
   flex-grow: 1;
   padding: 20px;
