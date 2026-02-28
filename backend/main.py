@@ -5,6 +5,7 @@ from spend import router as spend_router
 from income import router as income_router
 import duckdb
 import os
+from agent import router as agent_router
 
 port = int(os.environ.get("PORT", 8000))
 
@@ -22,6 +23,7 @@ app.add_middleware(
 app.include_router(debt_router)
 app.include_router(spend_router)
 app.include_router(income_router)
+app.include_router(agent_router)
 
 CSV_PATH = "personal_expense_dataset.csv"
 

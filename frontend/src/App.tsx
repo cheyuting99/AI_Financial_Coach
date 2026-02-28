@@ -221,26 +221,19 @@ function App() {
     setIsTyping(true);
 
     try {
-      const hostURL = "https://dl.watson-orchestrate.ibm.com";
-      const agentEnvironmentId = "a0f497c7-c69b-4715-9e6e-8b827ae2125d";
-      const watsonEndpoint = `${hostURL}/instances/api/v2/assistants/${agentEnvironmentId}/message?version=2021-06-14`;
+      const response = await fetch("http://localhost:8000/agent/chat", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ text: userText })
+});
 
-      const response = await fetch(watsonEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input: { message_type: 'text', text: userText }
-        })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const aiReply = data.output?.generic?.[0]?.text || "I processed your request, but didn't receive a text response.";
-
-        setMessages((prev) => [...prev, { id: Date.now() + 1, text: aiReply, sender: 'ai' }]);
-      } else {
-        throw new Error(`Agent responded with status: ${response.status}`);
-      }
+if (response.ok) {
+  const data = await response.json();
+  const aiReply = data.reply || "No reply returned.";
+  setMessages((prev) => [...prev, { id: Date.now() + 1, text: aiReply, sender: "ai" }]);
+} else {
+  throw new Error(`Backend responded with status: ${response.status}`);
+}
     } catch (error) {
       console.error("Agent Connection Error:", error);
       setMessages((prev) => [...prev, { 
