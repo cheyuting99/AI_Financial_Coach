@@ -4,11 +4,10 @@ import {
   LineChart, Line, PieChart, Pie, Cell, 
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
+import logo from './assets/logo.png'; 
 import './App.css';
-import logo from './assets/logo.png';
 
-// --- MOCK DATA ---
-// We replaced the single Lorem text with specific contexts for each page!
+// --- MOCK DATA (Keep your existing mock data here) ---
 const BUDGET_AI_TEXT = "Your Housing category takes up the largest portion of your budget at $2,000. Consider reviewing your utility and subscription costs to find extra savings.";
 const DEBT_AI_TEXT = "You currently owe $24,500. At your current payoff rate, you are on track to be debt-free in 18 months. Keep up the great work!";
 const INVEST_AI_TEXT = "Your portfolio has grown consistently. Tech stocks like NVDA are driving your gains, but you may want to consider diversifying into more index funds.";
@@ -49,14 +48,38 @@ const MOCK_STOCKS = [
 type TabType = 'overview' | 'budget' | 'debt' | 'investments';
 
 function App() {
+  // NEW: Splash screen states
+  const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [fadeSplash, setFadeSplash] = useState<boolean>(false);
+
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [inputText, setInputText] = useState('');
+  const [isTyping, setIsTyping] = useState<boolean>(false); 
+  
   const [messages, setMessages] = useState([
     { id: 1, text: DEFAULT_AI_TEXT, sender: 'ai' }
   ]);
 
   const chatInputRef = useRef<HTMLInputElement>(null);
+
+  // NEW: Handle the splash screen lifecycle on initial load
+  useEffect(() => {
+    // 1. Start the fade-out transition after 1.2 seconds
+    const fadeTimer = setTimeout(() => {
+      setFadeSplash(true);
+    }, 1200);
+
+    // 2. Completely remove the splash component after the 0.5s CSS transition finishes (1.7s total)
+    const removeTimer = setTimeout(() => {
+      setShowSplash(false);
+    }, 1700);
+
+    return () => {
+      clearTimeout(fadeTimer);
+      clearTimeout(removeTimer);
+    };
+  }, []);
   
   useEffect(() => {
     if (isChatOpen) {
@@ -67,7 +90,6 @@ function App() {
     }
   }, [isChatOpen]);
 
-  // NEW: A dynamic function that resets the chat with context-specific text
   const openChatWithContext = (contextText: string) => {
     setMessages([{ id: Date.now(), text: contextText, sender: 'ai' }]);
     setIsChatOpen(true);
@@ -77,13 +99,27 @@ function App() {
 
   const handleSendMessage = () => {
     if (!inputText.trim()) return;
+    
     const newUserMessage = {
       id: Date.now(),
       text: inputText,
       sender: 'user' as const
     };
-    setMessages([...messages, newUserMessage]);
+    setMessages((prev) => [...prev, newUserMessage]);
     setInputText('');
+    
+    setIsTyping(true);
+
+    setTimeout(() => {
+      const aiResponse = {
+        id: Date.now() + 1,
+        text: "This is a simulated backend response! Once you hook up your database, you can replace this setTimeout with your actual API fetch.",
+        sender: 'ai' as const
+      };
+      
+      setIsTyping(false);
+      setMessages((prev) => [...prev, aiResponse]);
+    }, 2500);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -96,7 +132,6 @@ function App() {
   };
 
   // --- PAGE COMPONENTS ---
-
   const renderOverview = () => (
     <div className="page-container">
       <h1>Net Worth Overview</h1>
@@ -139,7 +174,6 @@ function App() {
       <div className="ai-suggestion">
         <strong>AI Budget Analysis</strong>
         <p>{BUDGET_AI_TEXT}</p>
-        {/* FIX: Clicking here passes the Budget text to the chatbot */}
         <span className="details-link" onClick={() => openChatWithContext(BUDGET_AI_TEXT)}>details</span>
       </div>
     </div>
@@ -163,7 +197,6 @@ function App() {
       <div className="ai-suggestion">
         <strong>AI Debt Analyzer</strong>
         <p>{DEBT_AI_TEXT}</p>
-        {/* FIX: Clicking here passes the Debt text to the chatbot */}
         <span className="details-link" onClick={() => openChatWithContext(DEBT_AI_TEXT)}>details</span>
       </div>
     </div>
@@ -186,7 +219,6 @@ function App() {
       <div className="ai-suggestion">
         <strong>AI Investment Suggestion</strong>
         <p>{INVEST_AI_TEXT}</p>
-        {/* FIX: Clicking here passes the Invest text to the chatbot */}
         <span className="details-link" onClick={() => openChatWithContext(INVEST_AI_TEXT)}>details</span>
       </div>
       <div className="stock-list">
@@ -202,9 +234,18 @@ function App() {
 
   return (
     <div className="app-container">
+      
+      {/* --- NEW: SPLASH SCREEN --- */}
+      {showSplash && (
+        <div className={`splash-screen ${fadeSplash ? 'fade-out' : ''}`}>
+          <img src={logo} alt="Cat Logo" className="splash-logo" />
+          <h1 className="splash-title">Personal Finace Coach</h1>
+        </div>
+      )}
+
       <header className={`app-header ${isChatOpen ? 'blurred' : ''}`}>
-       <img src={logo} alt="Cat Logo" className="app-logo" />
-        <h1 className="app-title">Personal Finance Coach</h1>
+        <img src={logo} alt="Cat Logo" className="app-logo" />
+        <h1 className="app-title">Personal Finace Coach</h1>
       </header>
 
       <div className={`content-area ${isChatOpen ? 'blurred' : ''}`}>
@@ -222,12 +263,20 @@ function App() {
           <div className="chatbot-body">
             {messages.map((msg) => (
               <div key={msg.id} className={`chat-message ${msg.sender}`}>
-                {msg.sender === 'ai' && (
-                  <img src={logo} alt="AI Avatar" className="chat-avatar" />
-                )}
+                {msg.sender === 'ai' && <img src={logo} alt="AI Avatar" className="chat-avatar" />}
                 <div className="chat-bubble">{msg.text}</div>
               </div>
             ))}
+            
+            {isTyping && (
+              <div className="chat-message ai">
+                <img src={logo} alt="AI Avatar" className="chat-avatar" />
+                <div className="chat-bubble typing-bubble">
+                  <span className="typing-dots"></span>
+                </div>
+              </div>
+            )}
+
           </div>
           <div className="chatbot-input-area">
             <input 
@@ -245,12 +294,9 @@ function App() {
       <div className="bottom-nav">
         <div className={`nav-tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => handleTabChange('overview')}>Overview</div>
         <div className={`nav-tab ${activeTab === 'budget' ? 'active' : ''}`} onClick={() => handleTabChange('budget')}>Budget</div>
-        
-        {/* FIX: Clicking the main nav button resets to the generic greeting */}
         <div className="nav-ai-input" onClick={() => openChatWithContext(DEFAULT_AI_TEXT)}>
           <div className="ai-search-box">Ask AI for anything...</div>
         </div>
-        
         <div className={`nav-tab ${activeTab === 'debt' ? 'active' : ''}`} onClick={() => handleTabChange('debt')}>Debt</div>
         <div className={`nav-tab ${activeTab === 'investments' ? 'active' : ''}`} onClick={() => handleTabChange('investments')}>Invest</div>
       </div>
