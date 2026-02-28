@@ -2,6 +2,7 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware # <--- 1. Import this
 from debt import router as debt_router
 from spend import router as spend_router
+from income import router as income_router
 import duckdb
 import os
 
@@ -20,6 +21,7 @@ app.add_middleware(
 
 app.include_router(debt_router)
 app.include_router(spend_router)
+app.include_router(income_router)
 
 CSV_PATH = "personal_expense_dataset.csv"
 
