@@ -602,3 +602,65 @@ h2 {
   height: 100%;
   width: 100%;
 }
+
+/* --- MONTH SELECTOR UI --- */
+.month-selector {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 0 15px;
+}
+
+/* The invisible box holding the arrow so layout stays perfect */
+.month-arrow-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.2s ease;
+}
+
+/* Tiny pop-effect when hovering an arrow */
+.month-arrow-container:hover {
+  transform: scale(1.1);
+}
+
+/* Ex: "FEB" */
+.month-arrow-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+/* The actual arrow icon */
+.month-arrow {
+  font-size: 28px;
+  color: #0066cc;
+  line-height: 1;
+}
+
+/* Centers the top values */
+.current-month-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.current-month-label {
+  font-size: 16px;
+  font-weight: 800;
+  color: #666;
+  letter-spacing: 1.5px;
+  margin-bottom: 5px;
+}
+
+/* Overrides any default h2 spacing so it sits tight under the month label */
+.current-month-display h2 {
+  margin: 0;
+  color: #333;
+}

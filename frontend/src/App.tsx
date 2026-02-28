@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import logo from './assets/logo.png'; 
 import './App.css';
-import WatsonChatEmbed from "./components/WatsonChatEmbed";
+import WatsonChatEmbed from "./components/WatsonChatEmbed"; // RESTORED
 
 // --- FALLBACK MOCK DATA ---
 const BUDGET_AI_TEXT = "Your Housing category takes up the largest portion of your budget at $2,000. Consider reviewing your utility and subscription costs to find extra savings.";
@@ -46,6 +46,22 @@ const MOCK_STOCKS = [
   { id: 4, name: 'Nvidia (NVDA)', change: '+3.4%', isPositive: true }
 ];
 
+// --- MONTH DEFINITIONS FOR PIE CHART ---
+const MONTHS = [
+  { label: 'JAN', start: '2024-01-01', end: '2024-01-31' },
+  { label: 'FEB', start: '2024-02-01', end: '2024-02-29' },
+  { label: 'MAR', start: '2024-03-01', end: '2024-03-31' },
+  { label: 'APR', start: '2024-04-01', end: '2024-04-30' },
+  { label: 'MAY', start: '2024-05-01', end: '2024-05-31' },
+  { label: 'JUN', start: '2024-06-01', end: '2024-06-30' },
+  { label: 'JUL', start: '2024-07-01', end: '2024-07-31' },
+  { label: 'AUG', start: '2024-08-01', end: '2024-08-31' },
+  { label: 'SEP', start: '2024-09-01', end: '2024-09-30' },
+  { label: 'OCT', start: '2024-10-01', end: '2024-10-31' },
+  { label: 'NOV', start: '2024-11-01', end: '2024-11-30' },
+  { label: 'DEC', start: '2024-12-01', end: '2024-12-31' },
+];
+
 type TabType = 'overview' | 'budget' | 'debt' | 'investments';
 
 function App() {
@@ -72,37 +88,22 @@ function App() {
   const [netWorthHistory, setNetWorthHistory] = useState(FALLBACK_NET_WORTH_HISTORY);
   const [investmentHistory, setInvestmentHistory] = useState(FALLBACK_INVESTMENT_HISTORY);
 
+  // Pie Chart Month Tracker
+  const [monthIndex, setMonthIndex] = useState<number>(0); 
+
   const chatInputRef = useRef<HTMLInputElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null); // NEW: Reference for auto-scrolling
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // --- AUTO-SCROLL EFFECT ---
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // --- FETCH DATA FROM PYTHON BACKEND ---
+  // --- FETCH GENERAL BACKEND DATA ---
   useEffect(() => {
     const fetchBackendData = async () => {
       try {
-        const API_BASE_URL = 'http://localhost:8000'; // Default port for FastAPI
-
-        const budgetSummaryRes = await fetch(`${API_BASE_URL}/spend/summary`);
-        if (budgetSummaryRes.ok) {
-          const summaryData = await budgetSummaryRes.json();
-          setTotalBudget(summaryData.total_spend || 0); 
-        }
-
-        const budgetRes = await fetch(`${API_BASE_URL}/spend/top_categories?k=5`); 
-        if (budgetRes.ok) {
-          const rawBudgetData = await budgetRes.json();
-          const chartColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
-          const mappedBudget = rawBudgetData.map((item: any, index: number) => ({
-            category: item.Category,
-            amount: item.total_spend,
-            color: chartColors[index % chartColors.length]
-          }));
-          setBudgetData(mappedBudget);
-        }
+        const API_BASE_URL = 'http://localhost:8000'; 
 
         const debtListRes = await fetch(`${API_BASE_URL}/debt/list`);
         if (debtListRes.ok) {
@@ -128,12 +129,48 @@ function App() {
           }
         }
       } catch (error) {
-        console.error("Failed to connect to backend. Showing fallback data.", error);
+        console.error("Failed to connect to backend for general data.", error);
       }
     };
-
     fetchBackendData();
   }, []);
+
+  // --- FETCH MONTHLY BUDGET DATA (Triggers on arrow click) ---
+  useEffect(() => {
+    const fetchBudgetData = async () => {
+      try {
+        const API_BASE_URL = 'http://localhost:8000'; 
+        const month = MONTHS[monthIndex]; 
+
+        const budgetSummaryRes = await fetch(`${API_BASE_URL}/spend/summary?start=${month.start}&end=${month.end}`);
+        if (budgetSummaryRes.ok) {
+          const summaryData = await budgetSummaryRes.json();
+          setTotalBudget(summaryData.total_spend || 0); 
+        } else {
+          setTotalBudget(0);
+        }
+
+        const budgetRes = await fetch(`${API_BASE_URL}/spend/top_categories?k=5&start=${month.start}&end=${month.end}`); 
+        if (budgetRes.ok) {
+          const rawBudgetData = await budgetRes.json();
+          const chartColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+
+          const mappedBudget = rawBudgetData.map((item: any, index: number) => ({
+            category: item.Category,
+            amount: item.total_spend,
+            color: chartColors[index % chartColors.length]
+          }));
+          setBudgetData(mappedBudget);
+        } else {
+          setBudgetData([]);
+        }
+
+      } catch (error) {
+        console.error("Failed to connect to backend for budget data.", error);
+      }
+    };
+    fetchBudgetData();
+  }, [monthIndex]); 
 
   // Splash Screen Lifecycle
   useEffect(() => {
@@ -168,13 +205,12 @@ function App() {
 
   const closeChat = () => setIsChatOpen(false);
 
-  // --- UPDATED: SEND MESSAGES DIRECTLY TO IBM WATSON URL ---
+  // IBM WATSON FETCH LOGIC
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
     
     const userText = inputText;
     
-    // 1. Add user message to UI instantly
     const newUserMessage = {
       id: Date.now(),
       text: userText,
@@ -185,39 +221,23 @@ function App() {
     setIsTyping(true);
 
     try {
-      // 2. Extract configuration directly from your agent_chatbot.py reference
       const hostURL = "https://dl.watson-orchestrate.ibm.com";
       const agentEnvironmentId = "a0f497c7-c69b-4715-9e6e-8b827ae2125d";
-      
-      // 3. Construct the Watson API Endpoint
       const watsonEndpoint = `${hostURL}/instances/api/v2/assistants/${agentEnvironmentId}/message?version=2021-06-14`;
 
-      // 4. Send the POST request directly from the browser
       const response = await fetch(watsonEndpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          input: {
-            message_type: 'text',
-            text: userText
-          }
+          input: { message_type: 'text', text: userText }
         })
       });
 
       if (response.ok) {
         const data = await response.json();
-        
-        // 5. Parse the text from Watson's response payload
-        // Watson typically stores its replies in output.generic[0].text
         const aiReply = data.output?.generic?.[0]?.text || "I processed your request, but didn't receive a text response.";
 
-        setMessages((prev) => [...prev, { 
-          id: Date.now() + 1, 
-          text: aiReply, 
-          sender: 'ai' 
-        }]);
+        setMessages((prev) => [...prev, { id: Date.now() + 1, text: aiReply, sender: 'ai' }]);
       } else {
         throw new Error(`Agent responded with status: ${response.status}`);
       }
@@ -225,7 +245,7 @@ function App() {
       console.error("Agent Connection Error:", error);
       setMessages((prev) => [...prev, { 
         id: Date.now() + 1, 
-        text: "Error: The browser blocked the direct connection to the agent (CORS). If this happens, you will need to route this request through your FastAPI server.", 
+        text: "Error: The browser blocked the direct connection to the agent (CORS). If this happens, route the request through your FastAPI backend.", 
         sender: 'ai' 
       }]);
     } finally {
@@ -274,8 +294,33 @@ function App() {
   const renderBudget = () => (
     <div className="page-container">
       <h1>Budgeting Overview</h1>
-      <h2>${totalBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD Spent</h2>
       
+      {/* Month Selector UI */}
+      <div className="month-selector">
+        <div className="month-arrow-container" onClick={() => monthIndex > 0 && setMonthIndex(monthIndex - 1)}>
+          {monthIndex > 0 ? (
+            <>
+              <span className="month-arrow-label">{MONTHS[monthIndex - 1].label}</span>
+              <span className="month-arrow">{"\u25C0"}</span> 
+            </>
+          ) : <div style={{width: '60px'}}></div>}
+        </div>
+
+        <div className="current-month-display">
+          <div className="current-month-label">{MONTHS[monthIndex].label} 2024</div>
+          <h2>${totalBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD Spent</h2>
+        </div>
+
+        <div className="month-arrow-container" onClick={() => monthIndex < MONTHS.length - 1 && setMonthIndex(monthIndex + 1)}>
+          {monthIndex < MONTHS.length - 1 ? (
+            <>
+              <span className="month-arrow-label">{MONTHS[monthIndex + 1].label}</span>
+              <span className="month-arrow">{"\u25B6"}</span>
+            </>
+          ) : <div style={{width: '60px'}}></div>}
+        </div>
+      </div>
+
       <div className="chart-container" style={{ height: '350px', display: 'block' }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
@@ -383,6 +428,7 @@ function App() {
           <div className="chatbot-header">
             <button className="close-btn" onClick={closeChat}>&times;</button>
           </div>
+          
           <div className="chatbot-body">
             {messages.map((msg) => (
               <div key={msg.id} className={`chat-message ${msg.sender}`}>
@@ -402,6 +448,7 @@ function App() {
             {/* Auto-scroll target */}
             <div ref={messagesEndRef} />
           </div>
+
           <div className="chatbot-input-area">
             <input 
               ref={chatInputRef} 
@@ -411,11 +458,15 @@ function App() {
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
             />
-          <div className="chatbot-body" style={{ padding: 0 }}>
-      <WatsonChatEmbed rootElementID="wxo-chat-root" />
-    </div>
-  </div>
-</div>
+            
+            {/* --- RESTORED WATSON EMBED --- */}
+            <div className="chatbot-body" style={{ padding: 0 }}>
+              <WatsonChatEmbed rootElementID="wxo-chat-root" />
+            </div>
+            {/* ------------------------------- */}
+
+          </div>
+        </div>
       </div>
 
       <div className="bottom-nav">
