@@ -7,7 +7,7 @@ import {
 import logo from './assets/logo.png'; 
 import './App.css';
 
-// --- MOCK DATA (Keep your existing mock data here) ---
+// --- MOCK DATA ---
 const BUDGET_AI_TEXT = "Your Housing category takes up the largest portion of your budget at $2,000. Consider reviewing your utility and subscription costs to find extra savings.";
 const DEBT_AI_TEXT = "You currently owe $24,500. At your current payoff rate, you are on track to be debt-free in 18 months. Keep up the great work!";
 const INVEST_AI_TEXT = "Your portfolio has grown consistently. Tech stocks like NVDA are driving your gains, but you may want to consider diversifying into more index funds.";
@@ -48,7 +48,6 @@ const MOCK_STOCKS = [
 type TabType = 'overview' | 'budget' | 'debt' | 'investments';
 
 function App() {
-  // NEW: Splash screen states
   const [showSplash, setShowSplash] = useState<boolean>(true);
   const [fadeSplash, setFadeSplash] = useState<boolean>(false);
 
@@ -63,14 +62,11 @@ function App() {
 
   const chatInputRef = useRef<HTMLInputElement>(null);
 
-  // NEW: Handle the splash screen lifecycle on initial load
   useEffect(() => {
-    // 1. Start the fade-out transition after 1.2 seconds
     const fadeTimer = setTimeout(() => {
       setFadeSplash(true);
     }, 1200);
 
-    // 2. Completely remove the splash component after the 0.5s CSS transition finishes (1.7s total)
     const removeTimer = setTimeout(() => {
       setShowSplash(false);
     }, 1700);
@@ -129,6 +125,18 @@ function App() {
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     setIsChatOpen(false);
+  };
+
+  // --- NEW: Calculates cursor position and feeds it to CSS ---
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const rect = target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Injects the exact pixel coordinates into CSS variables
+    target.style.setProperty('--mouse-x', `${x}px`);
+    target.style.setProperty('--mouse-y', `${y}px`);
   };
 
   // --- PAGE COMPONENTS ---
@@ -235,17 +243,16 @@ function App() {
   return (
     <div className="app-container">
       
-      {/* --- NEW: SPLASH SCREEN --- */}
       {showSplash && (
         <div className={`splash-screen ${fadeSplash ? 'fade-out' : ''}`}>
           <img src={logo} alt="Cat Logo" className="splash-logo" />
-          <h1 className="splash-title">Personal Finace Coach</h1>
+          <h1 className="splash-title">Lorem Finance</h1>
         </div>
       )}
 
       <header className={`app-header ${isChatOpen ? 'blurred' : ''}`}>
         <img src={logo} alt="Cat Logo" className="app-logo" />
-        <h1 className="app-title">Personal Finace Coach</h1>
+        <h1 className="app-title">Lorem Finance</h1>
       </header>
 
       <div className={`content-area ${isChatOpen ? 'blurred' : ''}`}>
@@ -294,9 +301,16 @@ function App() {
       <div className="bottom-nav">
         <div className={`nav-tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => handleTabChange('overview')}>Overview</div>
         <div className={`nav-tab ${activeTab === 'budget' ? 'active' : ''}`} onClick={() => handleTabChange('budget')}>Budget</div>
+        
+        {/* --- UPDATED AI BUTTON --- */}
         <div className="nav-ai-input" onClick={() => openChatWithContext(DEFAULT_AI_TEXT)}>
-          <div className="ai-search-box">Ask AI for anything...</div>
+          {/* Attached the onMouseMove listener here */}
+          <div className="ai-search-box" onMouseMove={handleMouseMove}>
+            {/* Wrapped text in a span so it stays clearly above the glow */}
+            <span className="ai-search-text">Ask AI for anything...</span>
+          </div>
         </div>
+        
         <div className={`nav-tab ${activeTab === 'debt' ? 'active' : ''}`} onClick={() => handleTabChange('debt')}>Debt</div>
         <div className={`nav-tab ${activeTab === 'investments' ? 'active' : ''}`} onClick={() => handleTabChange('investments')}>Invest</div>
       </div>

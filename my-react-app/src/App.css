@@ -257,7 +257,44 @@ h2 {
   box-shadow: 1px 3px #bbbbbb;
   z-index: 1;
 }
+/* --- CURSOR FOLLOWING GLOW EFFECT --- */
 
+/* Ensures the glow doesn't spill outside the pill shape */
+.ai-search-box {
+  overflow: hidden; 
+}
+
+/* Elevate the text so it doesn't get covered by the glow layer */
+.ai-search-text {
+  position: relative;
+  z-index: 2;
+  pointer-events: none; /* Prevents text from interfering with hover tracking */
+}
+
+/* The actual spotlight layer */
+.ai-search-box::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: inherit;
+  
+  /* Creates a soft 80px circle exactly where the cursor is */
+  background: radial-gradient(
+    80px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+    rgba(100, 219, 255, 0.45), /* A nice soft blue matching your theme */
+    transparent 100%
+  );
+  
+  opacity: 0; /* Hidden by default */
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1; /* Sits between the box background and the text */
+}
+
+/* Reveals the spotlight when hovering over the button */
+.ai-search-box:hover::after {
+  opacity: 1;
+}
 .ai-search-box:hover {
   background: #e9ecef;
   color: white;
