@@ -1,0 +1,599 @@
+/* src/App.css */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background-color: #f8f9fa;
+  overflow: hidden;
+  position: relative;
+}
+
+/* --- TOP HEADER --- */
+.app-header {
+  display: flex;
+  align-items: center;
+  padding: 15px 25px;
+  background-color: rgb(255, 255, 255);
+  z-index: 10;
+  transition: filter 0.3s ease;
+}
+.app-logo {
+  width: 60px;      /* Forces the width down */
+  height: 60px;     /* Forces the height down */
+  object-fit: contain; /* Keeps your cat from getting stretched or squished */
+  margin-right: 10px;
+  flex-shrink: 0;   /* Prevents the flexbox layout from crushing the logo */
+}
+
+/* Reusing the blur class so the header fades when the chat is open */
+.app-header.blurred {
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.logo-placeholder {
+  width: 40px;
+  height: 40px;
+  background-color: #e0e0e0;
+  border-radius: 8px; /* A slightly rounded square for a modern app icon look */
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.app-title {
+  font-size: 20px;
+  color: #333;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Content Area with Blur Transition */
+.content-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 20px;
+  transition: filter 0.3s ease;
+}
+
+.content-area.blurred {
+  filter: blur(8px);
+  pointer-events: none; /* Prevents clicking underlying elements */
+}
+
+/* --- PAGE SLIDE-IN ANIMATION --- */
+@keyframes slideDownFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px); /* Slightly shorter travel distance since it's faster */
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Page Layouts */
+.page-container {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  /* We removed the animation from the parent container itself! */
+}
+
+/* Apply the animation to EVERY direct child inside the page container */
+.page-container > * {
+  opacity: 0; /* Ensures they stay invisible until their delay finishes */
+  animation: slideDownFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+}
+
+/* Stagger the delays for a rapid cascading effect (50ms apart) */
+.page-container > *:nth-child(1) { animation-delay: 0s; }
+.page-container > *:nth-child(2) { animation-delay: 0.05s; }
+.page-container > *:nth-child(3) { animation-delay: 0.10s; }
+.page-container > *:nth-child(4) { animation-delay: 0.15s; }
+.page-container > *:nth-child(5) { animation-delay: 0.20s; }
+.page-container > *:nth-child(6) { animation-delay: 0.25s; }
+.page-container > *:nth-child(7) { animation-delay: 0.30s; }
+
+h1 {
+  font-size: 24px;
+  color: #333;
+}
+
+h2 {
+  font-size: 32px;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+/* Chart Placeholders */
+.chart-container {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 250px;
+  color: #888;
+  font-weight: 500;
+  border: 2px dashed #e0e0e0;
+}
+
+/* Budget Page Specifics */
+.budget-layout {
+  display: flex;
+  gap: 20px;
+}
+
+.pie-chart {
+  width: 100%;
+  min-height: 300px; /* Ensures a minimum height even if the inline style fails */
+}
+/* AI Suggestion Box */
+.ai-suggestion {
+  flex: 1;
+  background: #f0f7ff;
+  border-left: 4px solid #0066cc;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.ai-suggestion p {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 25px;
+}
+
+.details-link {
+  position: absolute;
+  bottom: 15px;
+  right: 15px;
+  color: #0066cc;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Stocks List */
+.stock-list {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  overflow: hidden;
+}
+
+.stock-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 15px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.stock-item:last-child {
+  border-bottom: none;
+}
+
+.stock-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.stock-change.positive { color: #28a745; }
+.stock-change.negative { color: #dc3545; }
+
+/* Bottom Navigation */
+.bottom-nav {
+  height: 80px;
+  background: white;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+  z-index: 10;
+  padding: 0 10px;
+}
+
+.nav-tab {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100% - 20px);
+  border-radius: 5px;
+  cursor: pointer;
+  color: #666;
+  font-weight: 600;
+  transition: all 0.4s ease;
+ 
+}
+.nav-tab:hover {
+  background-color: #e6e4eb; 
+  color: #0066cc;
+   box-shadow: 0px 1px #cdcbff;
+}
+
+.nav-tab.active {
+  color: #0066cc;
+  background-color: #e6e4eb;
+   box-shadow: 0px 1px #cdcbff;
+}
+
+.nav-ai-input {
+  flex: 2;
+  margin: 0 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.ai-search-box {
+  position: relative;
+  padding: 12px 44px;
+  background: #ffffff;
+  border-radius: 25px;
+  border: none;
+  color: #999;
+  text-align: center;
+  cursor: text;
+  font-size: 14px;
+  transition: background 0.3s ease;
+  box-shadow: 1px 3px #bbbbbb;
+  z-index: 1;
+}
+/* --- CURSOR FOLLOWING GLOW EFFECT --- */
+
+/* Ensures the glow doesn't spill outside the pill shape */
+.ai-search-box {
+  overflow: hidden; 
+}
+
+/* Elevate the text so it doesn't get covered by the glow layer */
+.ai-search-text {
+  position: relative;
+  z-index: 2;
+  pointer-events: none; /* Prevents text from interfering with hover tracking */
+}
+
+/* The actual spotlight layer */
+.ai-search-box::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: inherit;
+  
+  /* Creates a soft 80px circle exactly where the cursor is */
+  background: radial-gradient(
+    80px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+    rgba(100, 219, 255, 0.45), /* A nice soft blue matching your theme */
+    transparent 100%
+  );
+  
+  opacity: 0; /* Hidden by default */
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1; /* Sits between the box background and the text */
+}
+
+/* Reveals the spotlight when hovering over the button */
+.ai-search-box:hover::after {
+  opacity: 1;
+}
+.ai-search-box:hover {
+  background: #e9ecef;
+  color: white;
+}
+.ai-search-box::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 27px; /* Slightly larger than the box radius to form a uniform border */
+  /* A vibrant, tech-inspired gradient. Feel free to swap these hex codes! */
+  background: linear-gradient(90deg, #73a0ff, #948eac, #73a0ff);
+  background-size: 200% 200%;
+  z-index: -1; /* Pushes the gradient behind the solid background of the search box */
+  opacity: 0; /* Hidden by default */
+  transition: opacity 0.3s ease;
+}
+
+.ai-search-box:hover::before {
+  opacity: 1;
+  animation: revolveBorder 2s linear infinite;
+}
+
+/* The animation keyframes to slide the background colors */
+@keyframes revolveBorder {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* Chatbot Overlay */
+.chatbot-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 70px; 
+  z-index: 999; 
+  background-color: rgb(233, 248, 255, 0.9);
+  display: flex;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.chatbot-overlay.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.chatbot-window {
+  width: 100%;
+  height: 100%;
+  max-width: 800px;
+  background: transparent; 
+  border-radius: 0;
+  box-shadow: none;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transform: scale(0.95) translateY(10px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.chatbot-overlay.open .chatbot-window {
+  transform: scale(1) translateY(0);
+}
+.chatbot-header {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  z-index: 10;
+  padding: 0;
+  background: transparent;
+}
+.chatbot-header h3 {
+  display: none; /* Hide the title so messages are the main focus at the top left */
+}
+.close-btn {
+  background: none;
+  border: none;
+  color: #333; /* Darkened so it's visible against the blur */
+  font-size: 36px;
+  cursor: pointer;
+  text-shadow: 0 2px 4px rgba(255,255,255,0.8); /* Helps it stand out */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease; /* Animate the transform property */
+  transform-origin: center; /* Ensures it grows from the middle */
+}
+.close-btn:hover {
+  transform: scale(1.2);
+}
+
+.chatbot-body {
+  flex-grow: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+.chatbot-input-area {
+  padding: 20px;
+  padding-bottom: 10px; /* Extra padding at the bottom for mobile screens */
+  background: transparent;
+  border-top: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+.chatbot-input-area input {
+  flex-grow: 1;
+  width: 100%;
+  max-width: 600px;
+  padding: 15px 20px;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 25px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  font-size: 16px;
+}
+/* Chat Message Container */
+.chat-message {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  max-width: 85%;
+}
+
+/* --- CHAT BUBBLE ANIMATIONS --- */
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px) scale(0.95); /* Starts slightly to the left and slightly smaller */
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(30px) scale(0.95); /* Starts slightly to the right */
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+/* AI Message Alignment */
+.chat-message.ai {
+  margin-top:30px;
+  align-self: flex-start;
+}
+
+/* User Message Alignment */
+.chat-message.user {
+  align-self: flex-end;
+  margin-top:30px;
+  margin-right: 30px;
+  flex-direction: row-reverse;
+}
+
+/* TRIGGER ANIMATIONS ONLY WHEN THE CHAT IS OPEN */
+.chatbot-overlay.open .chat-message.ai {
+  animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 0.06s; /* Tiny delay so the window fades in first */
+}
+
+.chatbot-overlay.open .chat-message.user {
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Blank Avatar Icon */
+.chat-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #ffffff;
+  flex-shrink: 0;
+  overflow: hidden;
+  object-fit: contain;
+}
+
+/* Message Bubbles */
+.chat-bubble {
+  padding: 12px 18px;
+  border-radius: 20px;
+  font-size: 15px;
+  line-height: 1.4;
+  box-shadow: 0 5px 2px rgba(0,0,0,0.15);
+}
+
+/* AI Bubble Styling (White, left side) */
+.chat-message.ai .chat-bubble {
+  background-color: white;
+  color: #333;
+  border-bottom-left-radius: 4px; /* Flattens the bottom corner like a tail */
+}
+
+/* User Bubble Styling (Green, right side) */
+.chat-message.user .chat-bubble {
+  background-color: white; 
+  border-bottom-right-radius: 4px;
+}
+
+/* --- AI TYPING INDICATOR --- */
+.typing-bubble {
+  min-width: 65px; /* Ensures the bubble doesn't collapse when there are 0 dots */
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.typing-dots {
+  font-family: monospace; /* Keeps the dots perfectly spaced */
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: #999;
+}
+
+/* The ::after pseudo-element holds the actual dots and runs the animation */
+.typing-dots::after {
+  content: '';
+  animation: sixDots 1.8s infinite;
+}
+
+@keyframes sixDots {
+  0%   { content: ''; }
+  16%  { content: '.'; }
+  33%  { content: '..'; }
+  50%  { content: '...'; }
+  66%  { content: '....'; }
+  83%  { content: '.....'; }
+  100% { content: '......'; }
+}
+
+/* --- SPLASH SCREEN --- */
+.splash-screen {
+  position: absolute; /* Ensures it overlays everything inside the app container */
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: #ffffff;
+  z-index: 9999; /* Keeps it on top of the chat and headers */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+}
+
+/* Added by React state to trigger the fade out */
+.splash-screen.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-logo {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  margin-bottom: 20px;
+  /* Adds a smooth pop-in entrance to the logo */
+  animation: splashPop 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.splash-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+  letter-spacing: -0.5px;
+  opacity: 0;
+  /* Slightly delays the title so it follows the logo */
+  animation: splashPop 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 0.15s;
+}
+
+@keyframes splashPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
