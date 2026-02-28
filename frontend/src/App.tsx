@@ -6,6 +6,7 @@ import {
 } from 'recharts';
 import logo from './assets/logo.png'; 
 import './App.css';
+import WatsonChatEmbed from "./components/WatsonChatEmbed";
 
 // --- FALLBACK MOCK DATA ---
 const BUDGET_AI_TEXT = "Your Housing category takes up the largest portion of your budget at $2,000. Consider reviewing your utility and subscription costs to find extra savings.";
@@ -60,7 +61,7 @@ function App() {
     { id: 1, text: DEFAULT_AI_TEXT, sender: 'ai' }
   ]);
 
-  // --- NEW: Dynamic Header Totals ---
+  // Dynamic Header Totals
   const [totalBudget, setTotalBudget] = useState<number>(0);
   const [totalDebt, setTotalDebt] = useState<number>(MOCK_TOTAL_DEBT);
   const [netWorth, setNetWorth] = useState<number>(MOCK_NET_WORTH);
@@ -72,6 +73,12 @@ function App() {
   const [investmentHistory, setInvestmentHistory] = useState(FALLBACK_INVESTMENT_HISTORY);
 
   const chatInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null); // NEW: Reference for auto-scrolling
+
+  // --- AUTO-SCROLL EFFECT ---
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
 
   // --- FETCH DATA FROM PYTHON BACKEND ---
   useEffect(() => {
@@ -79,20 +86,16 @@ function App() {
       try {
         const API_BASE_URL = 'http://localhost:8000'; // Default port for FastAPI
 
-        // 1. FETCH OVERALL BUDGET TOTAL
         const budgetSummaryRes = await fetch(`${API_BASE_URL}/spend/summary`);
         if (budgetSummaryRes.ok) {
           const summaryData = await budgetSummaryRes.json();
-          // Updates the <h2> at the top of the Budget page
           setTotalBudget(summaryData.total_spend || 0); 
         }
 
-        // 2. FETCH BUDGET PIE CHART DATA (Top 5 Categories)
         const budgetRes = await fetch(`${API_BASE_URL}/spend/top_categories?k=5`); 
         if (budgetRes.ok) {
           const rawBudgetData = await budgetRes.json();
           const chartColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
-
           const mappedBudget = rawBudgetData.map((item: any, index: number) => ({
             category: item.Category,
             amount: item.total_spend,
@@ -101,20 +104,16 @@ function App() {
           setBudgetData(mappedBudget);
         }
 
-        // 3. FETCH CURRENT DEBT TOTAL
         const debtListRes = await fetch(`${API_BASE_URL}/debt/list`);
         if (debtListRes.ok) {
           const debtList = await debtListRes.json();
-          // Adds up the balances of all current debts for the <h2> tag
           const currentTotalDebt = debtList.reduce((sum: number, debt: any) => sum + debt.balance, 0);
           setTotalDebt(currentTotalDebt);
         }
 
-        // 4. FETCH DEBT PAYOFF DATA (Avalanche Strategy)
         const debtRes = await fetch(`${API_BASE_URL}/debt/plan?schedule_months=12`);
         if (debtRes.ok) {
           const rawDebtData = await debtRes.json();
-          
           if (rawDebtData.schedule_preview) {
             const mappedDebt = rawDebtData.schedule_preview.map((monthData: any) => {
               const totalRemainingBalance = monthData.debts.reduce(
@@ -128,7 +127,6 @@ function App() {
             setDebtHistory(mappedDebt);
           }
         }
-
       } catch (error) {
         console.error("Failed to connect to backend. Showing fallback data.", error);
       }
@@ -170,29 +168,69 @@ function App() {
 
   const closeChat = () => setIsChatOpen(false);
 
-  const handleSendMessage = () => {
+  // --- UPDATED: SEND MESSAGES DIRECTLY TO IBM WATSON URL ---
+  const handleSendMessage = async () => {
     if (!inputText.trim()) return;
     
+    const userText = inputText;
+    
+    // 1. Add user message to UI instantly
     const newUserMessage = {
       id: Date.now(),
-      text: inputText,
+      text: userText,
       sender: 'user' as const
     };
     setMessages((prev) => [...prev, newUserMessage]);
     setInputText('');
-    
     setIsTyping(true);
 
-    setTimeout(() => {
-      const aiResponse = {
-        id: Date.now() + 1,
-        text: "This is a simulated backend response! Once you hook up your database, you can replace this setTimeout with your actual API fetch.",
-        sender: 'ai' as const
-      };
+    try {
+      // 2. Extract configuration directly from your agent_chatbot.py reference
+      const hostURL = "https://dl.watson-orchestrate.ibm.com";
+      const agentEnvironmentId = "a0f497c7-c69b-4715-9e6e-8b827ae2125d";
       
+      // 3. Construct the Watson API Endpoint
+      const watsonEndpoint = `${hostURL}/instances/api/v2/assistants/${agentEnvironmentId}/message?version=2021-06-14`;
+
+      // 4. Send the POST request directly from the browser
+      const response = await fetch(watsonEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          input: {
+            message_type: 'text',
+            text: userText
+          }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // 5. Parse the text from Watson's response payload
+        // Watson typically stores its replies in output.generic[0].text
+        const aiReply = data.output?.generic?.[0]?.text || "I processed your request, but didn't receive a text response.";
+
+        setMessages((prev) => [...prev, { 
+          id: Date.now() + 1, 
+          text: aiReply, 
+          sender: 'ai' 
+        }]);
+      } else {
+        throw new Error(`Agent responded with status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Agent Connection Error:", error);
+      setMessages((prev) => [...prev, { 
+        id: Date.now() + 1, 
+        text: "Error: The browser blocked the direct connection to the agent (CORS). If this happens, you will need to route this request through your FastAPI server.", 
+        sender: 'ai' 
+      }]);
+    } finally {
       setIsTyping(false);
-      setMessages((prev) => [...prev, aiResponse]);
-    }, 2500);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -218,7 +256,6 @@ function App() {
   const renderOverview = () => (
     <div className="page-container">
       <h1>Net Worth Overview</h1>
-      {/* Uses the dynamic netWorth state */}
       <h2>${netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</h2>
       <div className="chart-container" style={{ height: '300px' }}>
         <ResponsiveContainer width="100%" height="100%">
@@ -237,7 +274,6 @@ function App() {
   const renderBudget = () => (
     <div className="page-container">
       <h1>Budgeting Overview</h1>
-      {/* NEW: Displays the total budget spent from your /spend/summary endpoint */}
       <h2>${totalBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD Spent</h2>
       
       <div className="chart-container" style={{ height: '350px', display: 'block' }}>
@@ -269,7 +305,6 @@ function App() {
   const renderDebt = () => (
     <div className="page-container">
       <h1>Debt Helper</h1>
-      {/* NEW: Displays the current real debt calculated from /debt/list */}
       <h2>${totalDebt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD Owed</h2>
       
       <div className="chart-container" style={{ height: '300px' }}>
@@ -364,7 +399,8 @@ function App() {
                 </div>
               </div>
             )}
-
+            {/* Auto-scroll target */}
+            <div ref={messagesEndRef} />
           </div>
           <div className="chatbot-input-area">
             <input 
@@ -375,8 +411,11 @@ function App() {
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
             />
-          </div>
-        </div>
+          <div className="chatbot-body" style={{ padding: 0 }}>
+      <WatsonChatEmbed rootElementID="wxo-chat-root" />
+    </div>
+  </div>
+</div>
       </div>
 
       <div className="bottom-nav">
