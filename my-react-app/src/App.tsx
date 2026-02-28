@@ -93,7 +93,7 @@ function App() {
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="date" axisLine={false} tickLine={false} />
             <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value/1000}k`} />
-            <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
+            <Tooltip formatter={(value: any) => `$${value.toLocaleString()}`} />
             <Area type="monotone" dataKey="amount" stroke="#0066cc" fillOpacity={1} fill="url(#colorNetWorth)" />
           </AreaChart>
         </ResponsiveContainer>
@@ -122,7 +122,7 @@ function App() {
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
-              <Tooltip formatter={(value: number) => `$${value}`} />
+              <Tooltip formatter={(value: any) => `$${value}`} />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -145,7 +145,7 @@ function App() {
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="date" axisLine={false} tickLine={false} />
             <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value/1000}k`} />
-            <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
+            <Tooltip formatter={(value: any) => `$${value.toLocaleString()}`} />
             <Line type="monotone" dataKey="amount" stroke="#dc3545" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
           </LineChart>
         </ResponsiveContainer>
@@ -173,7 +173,7 @@ function App() {
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="date" axisLine={false} tickLine={false} />
             <YAxis axisLine={false} tickLine={false} tickFormatter={(value) => `$${value/1000}k`} />
-            <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
+            <Tooltip formatter={(value: any) => `$${value.toLocaleString()}`} />
             <Area type="monotone" dataKey="amount" stroke="#28a745" fillOpacity={1} fill="url(#colorInvestments)" />
           </AreaChart>
         </ResponsiveContainer>
