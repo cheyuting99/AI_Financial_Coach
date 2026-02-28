@@ -43,6 +43,9 @@ The system:
 - Teaches financial concepts in plain language  
 
 ---
+## Demo
+
+---
 
 ##  System Architecture
 
