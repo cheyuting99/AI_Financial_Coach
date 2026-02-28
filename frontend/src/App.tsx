@@ -246,13 +246,13 @@ function App() {
       {showSplash && (
         <div className={`splash-screen ${fadeSplash ? 'fade-out' : ''}`}>
           <img src={logo} alt="Cat Logo" className="splash-logo" />
-          <h1 className="splash-title">Lorem Finance</h1>
+          <h1 className="splash-title">Personal Finance Coach</h1>
         </div>
       )}
 
       <header className={`app-header ${isChatOpen ? 'blurred' : ''}`}>
         <img src={logo} alt="Cat Logo" className="app-logo" />
-        <h1 className="app-title">Lorem Finance</h1>
+        <h1 className="app-title">Personal Finance Coach</h1>
       </header>
 
       <div className={`content-area ${isChatOpen ? 'blurred' : ''}`}>
