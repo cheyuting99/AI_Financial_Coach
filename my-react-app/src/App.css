@@ -16,6 +16,39 @@
   position: relative;
 }
 
+/* --- TOP HEADER --- */
+.app-header {
+  display: flex;
+  align-items: center;
+  padding: 15px 25px;
+  background-color: rgb(255, 255, 255);
+  z-index: 10;
+  transition: filter 0.3s ease;
+}
+
+/* Reusing the blur class so the header fades when the chat is open */
+.app-header.blurred {
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.logo-placeholder {
+  width: 40px;
+  height: 40px;
+  background-color: #e0e0e0;
+  border-radius: 8px; /* A slightly rounded square for a modern app icon look */
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.app-title {
+  font-size: 20px;
+  color: #333;
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
 /* Content Area with Blur Transition */
 .content-area {
   flex-grow: 1;
@@ -29,6 +62,18 @@
   pointer-events: none; /* Prevents clicking underlying elements */
 }
 
+/* --- PAGE SLIDE-IN ANIMATION --- */
+@keyframes slideDownFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px); /* Slightly shorter travel distance since it's faster */
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Page Layouts */
 .page-container {
   max-width: 800px;
@@ -36,7 +81,23 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  /* We removed the animation from the parent container itself! */
 }
+
+/* Apply the animation to EVERY direct child inside the page container */
+.page-container > * {
+  opacity: 0; /* Ensures they stay invisible until their delay finishes */
+  animation: slideDownFade 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; 
+}
+
+/* Stagger the delays for a rapid cascading effect (50ms apart) */
+.page-container > *:nth-child(1) { animation-delay: 0s; }
+.page-container > *:nth-child(2) { animation-delay: 0.05s; }
+.page-container > *:nth-child(3) { animation-delay: 0.10s; }
+.page-container > *:nth-child(4) { animation-delay: 0.15s; }
+.page-container > *:nth-child(5) { animation-delay: 0.20s; }
+.page-container > *:nth-child(6) { animation-delay: 0.25s; }
+.page-container > *:nth-child(7) { animation-delay: 0.30s; }
 
 h1 {
   font-size: 24px;
@@ -149,20 +210,23 @@ h2 {
   justify-content: center;
   align-items: center;
   height: calc(100% - 20px);
-  margin: 10px 5px;
-  border-radius: 30px;
+  border-radius: 5px;
   cursor: pointer;
   color: #666;
   font-weight: 600;
   transition: all 0.4s ease;
+ 
 }
 .nav-tab:hover {
-  background-color: #dcdcdc; 
+  background-color: #e6e4eb; 
+  color: #0066cc;
+   box-shadow: 0px 1px #cdcbff;
 }
 
 .nav-tab.active {
   color: #0066cc;
   background-color: #e6e4eb;
+   box-shadow: 0px 1px #cdcbff;
 }
 
 .nav-ai-input {
@@ -181,7 +245,7 @@ h2 {
   border: none;
   color: #999;
   text-align: center;
-  cursor: pointer;
+  cursor: text;
   font-size: 14px;
   transition: background 0.3s ease;
   box-shadow: 1px 3px #bbbbbb;
@@ -201,7 +265,7 @@ h2 {
   bottom: -2px;
   border-radius: 27px; /* Slightly larger than the box radius to form a uniform border */
   /* A vibrant, tech-inspired gradient. Feel free to swap these hex codes! */
-  background: linear-gradient(90deg, #ff0080, #ff8c00, #40e0d0, #ff0080);
+  background: linear-gradient(90deg, #73a0ff, #948eac, #73a0ff);
   background-size: 200% 200%;
   z-index: -1; /* Pushes the gradient behind the solid background of the search box */
   opacity: 0; /* Hidden by default */
@@ -225,12 +289,23 @@ h2 {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0; 
+  bottom: 70px; 
   z-index: 999; 
-  background-color: rgba(255, 255, 255, 0.4);
+  background-color: rgb(233, 248, 255);
   display: flex;
   justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
+
+.chatbot-overlay.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
 .chatbot-window {
   width: 100%;
   height: 100%;
@@ -241,6 +316,11 @@ h2 {
   display: flex;
   flex-direction: column;
   position: relative;
+  transform: scale(0.95) translateY(10px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.chatbot-overlay.open .chatbot-window {
+  transform: scale(1) translateY(0);
 }
 .chatbot-header {
   position: absolute;
@@ -271,7 +351,7 @@ h2 {
 }
 .chatbot-input-area {
   padding: 20px;
-  padding-bottom: 70px; /* Extra padding at the bottom for mobile screens */
+  padding-bottom: 10px; /* Extra padding at the bottom for mobile screens */
   background: transparent;
   border-top: none;
   display: flex;
@@ -299,6 +379,29 @@ h2 {
   max-width: 85%;
 }
 
+/* --- CHAT BUBBLE ANIMATIONS --- */
+@keyframes slideInLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px) scale(0.95); /* Starts slightly to the left and slightly smaller */
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  0% {
+    opacity: 0;
+    transform: translateX(30px) scale(0.95); /* Starts slightly to the right */
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
 /* AI Message Alignment */
 .chat-message.ai {
   align-self: flex-start;
@@ -308,6 +411,16 @@ h2 {
 .chat-message.user {
   align-self: flex-end;
   flex-direction: row-reverse;
+}
+
+/* TRIGGER ANIMATIONS ONLY WHEN THE CHAT IS OPEN */
+.chatbot-overlay.open .chat-message.ai {
+  animation: slideInLeft 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation-delay: 0.06s; /* Tiny delay so the window fades in first */
+}
+
+.chatbot-overlay.open .chat-message.user {
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Blank Avatar Icon */
