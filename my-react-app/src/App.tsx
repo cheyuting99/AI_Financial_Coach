@@ -5,9 +5,14 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
 } from 'recharts';
 import './App.css';
+import logo from './assets/logo.png';
 
 // --- MOCK DATA ---
-const AI_LOREM_TEXT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.";
+// We replaced the single Lorem text with specific contexts for each page!
+const BUDGET_AI_TEXT = "Your Housing category takes up the largest portion of your budget at $2,000. Consider reviewing your utility and subscription costs to find extra savings.";
+const DEBT_AI_TEXT = "You currently owe $24,500. At your current payoff rate, you are on track to be debt-free in 18 months. Keep up the great work!";
+const INVEST_AI_TEXT = "Your portfolio has grown consistently. Tech stocks like NVDA are driving your gains, but you may want to consider diversifying into more index funds.";
+const DEFAULT_AI_TEXT = "Hello! How can I help you analyze your finances today?";
 
 const MOCK_NET_WORTH = 145250.00;
 const MOCK_TOTAL_DEBT = 24500.00;
@@ -46,25 +51,49 @@ type TabType = 'overview' | 'budget' | 'debt' | 'investments';
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState([
-    { id: 1, text: "Hello! How can I help you analyze your finances today?", sender: 'ai' }
+    { id: 1, text: DEFAULT_AI_TEXT, sender: 'ai' }
   ]);
 
   const chatInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    if (isChatOpen && chatInputRef.current) {
-      chatInputRef.current.focus();
+    if (isChatOpen) {
+      const timer = setTimeout(() => {
+        chatInputRef.current?.focus();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [isChatOpen]);
+
+  // NEW: A dynamic function that resets the chat with context-specific text
+  const openChatWithContext = (contextText: string) => {
+    setMessages([{ id: Date.now(), text: contextText, sender: 'ai' }]);
+    setIsChatOpen(true);
+  };
+
+  const closeChat = () => setIsChatOpen(false);
+
+  const handleSendMessage = () => {
+    if (!inputText.trim()) return;
+    const newUserMessage = {
+      id: Date.now(),
+      text: inputText,
+      sender: 'user' as const
+    };
+    setMessages([...messages, newUserMessage]);
+    setInputText('');
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') handleSendMessage();
+  };
 
   const handleTabChange = (tab: TabType) => {
     setActiveTab(tab);
     setIsChatOpen(false);
   };
-
-  const openChat = () => setIsChatOpen(true);
-  const closeChat = () => setIsChatOpen(false);
 
   // --- PAGE COMPONENTS ---
 
@@ -109,8 +138,9 @@ function App() {
       </div>
       <div className="ai-suggestion">
         <strong>AI Budget Analysis</strong>
-        <p>{AI_LOREM_TEXT}</p>
-        <span className="details-link" onClick={openChat}>details</span>
+        <p>{BUDGET_AI_TEXT}</p>
+        {/* FIX: Clicking here passes the Budget text to the chatbot */}
+        <span className="details-link" onClick={() => openChatWithContext(BUDGET_AI_TEXT)}>details</span>
       </div>
     </div>
   );
@@ -132,8 +162,9 @@ function App() {
       </div>
       <div className="ai-suggestion">
         <strong>AI Debt Analyzer</strong>
-        <p>{AI_LOREM_TEXT}</p>
-        <span className="details-link" onClick={openChat}>details</span>
+        <p>{DEBT_AI_TEXT}</p>
+        {/* FIX: Clicking here passes the Debt text to the chatbot */}
+        <span className="details-link" onClick={() => openChatWithContext(DEBT_AI_TEXT)}>details</span>
       </div>
     </div>
   );
@@ -154,8 +185,9 @@ function App() {
       </div>
       <div className="ai-suggestion">
         <strong>AI Investment Suggestion</strong>
-        <p>{AI_LOREM_TEXT}</p>
-        <span className="details-link" onClick={openChat}>details</span>
+        <p>{INVEST_AI_TEXT}</p>
+        {/* FIX: Clicking here passes the Invest text to the chatbot */}
+        <span className="details-link" onClick={() => openChatWithContext(INVEST_AI_TEXT)}>details</span>
       </div>
       <div className="stock-list">
         {MOCK_STOCKS.map((stock) => (
@@ -171,8 +203,8 @@ function App() {
   return (
     <div className="app-container">
       <header className={`app-header ${isChatOpen ? 'blurred' : ''}`}>
-        <div className="logo-placeholder"></div>
-        <h1 className="app-title">Lorem Finance</h1>
+       <img src={logo} alt="Cat Logo" className="app-logo" />
+        <h1 className="app-title">Personal Finance Coach</h1>
       </header>
 
       <div className={`content-area ${isChatOpen ? 'blurred' : ''}`}>
@@ -190,13 +222,22 @@ function App() {
           <div className="chatbot-body">
             {messages.map((msg) => (
               <div key={msg.id} className={`chat-message ${msg.sender}`}>
-                {msg.sender === 'ai' && <div className="chat-avatar"></div>}
+                {msg.sender === 'ai' && (
+                  <img src={logo} alt="AI Avatar" className="chat-avatar" />
+                )}
                 <div className="chat-bubble">{msg.text}</div>
               </div>
             ))}
           </div>
           <div className="chatbot-input-area">
-            <input ref={chatInputRef} type="text" placeholder="Type your message..." />
+            <input 
+              ref={chatInputRef} 
+              type="text" 
+              placeholder="Type your message..." 
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
           </div>
         </div>
       </div>
@@ -204,9 +245,12 @@ function App() {
       <div className="bottom-nav">
         <div className={`nav-tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => handleTabChange('overview')}>Overview</div>
         <div className={`nav-tab ${activeTab === 'budget' ? 'active' : ''}`} onClick={() => handleTabChange('budget')}>Budget</div>
-        <div className="nav-ai-input" onClick={openChat}>
+        
+        {/* FIX: Clicking the main nav button resets to the generic greeting */}
+        <div className="nav-ai-input" onClick={() => openChatWithContext(DEFAULT_AI_TEXT)}>
           <div className="ai-search-box">Ask AI for anything...</div>
         </div>
+        
         <div className={`nav-tab ${activeTab === 'debt' ? 'active' : ''}`} onClick={() => handleTabChange('debt')}>Debt</div>
         <div className={`nav-tab ${activeTab === 'investments' ? 'active' : ''}`} onClick={() => handleTabChange('investments')}>Invest</div>
       </div>
