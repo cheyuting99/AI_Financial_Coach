@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware # <--- 1. Import this
 from debt import router as debt_router
 from spend import router as spend_router
 from income import router as income_router
@@ -7,11 +8,16 @@ import os
 
 port = int(os.environ.get("PORT", 8000))
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+app = FastAPI(title="Personal Finance Coach API")
 
-app = FastAPI(title="Kaggle Expense Query API")
+# <--- 2. Add this block to allow React to connect --->
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], # In production, replace "*" with your React app's URL
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(debt_router)
 app.include_router(spend_router)
@@ -36,3 +42,7 @@ def connect_with_view():
 @app.get("/health")
 def health():
     return {"ok": True}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=port)

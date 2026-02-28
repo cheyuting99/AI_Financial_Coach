@@ -7,7 +7,7 @@ import {
 import logo from './assets/logo.png'; 
 import './App.css';
 
-// --- MOCK DATA ---
+// --- FALLBACK MOCK DATA ---
 const BUDGET_AI_TEXT = "Your Housing category takes up the largest portion of your budget at $2,000. Consider reviewing your utility and subscription costs to find extra savings.";
 const DEBT_AI_TEXT = "You currently owe $24,500. At your current payoff rate, you are on track to be debt-free in 18 months. Keep up the great work!";
 const INVEST_AI_TEXT = "Your portfolio has grown consistently. Tech stocks like NVDA are driving your gains, but you may want to consider diversifying into more index funds.";
@@ -16,24 +16,24 @@ const DEFAULT_AI_TEXT = "Hello! How can I help you analyze your finances today?"
 const MOCK_NET_WORTH = 145250.00;
 const MOCK_TOTAL_DEBT = 24500.00;
 
-const MOCK_NET_WORTH_HISTORY = [
+const FALLBACK_NET_WORTH_HISTORY = [
   { date: 'Jan', amount: 130000 }, { date: 'Feb', amount: 135000 },
   { date: 'Mar', amount: 132000 }, { date: 'Apr', amount: 145250 },
 ];
 
-const MOCK_BUDGET_DATA = [
+const FALLBACK_BUDGET_DATA = [
   { category: 'Housing', amount: 2000, color: '#FF6384' },
   { category: 'Food', amount: 600, color: '#36A2EB' },
   { category: 'Transport', amount: 400, color: '#FFCE56' },
   { category: 'Entertainment', amount: 300, color: '#4BC0C0' },
 ];
 
-const MOCK_DEBT_HISTORY = [
+const FALLBACK_DEBT_HISTORY = [
   { date: 'Jan', amount: 28000 }, { date: 'Feb', amount: 26500 },
   { date: 'Mar', amount: 25000 }, { date: 'Apr', amount: 24500 },
 ];
 
-const MOCK_INVESTMENT_HISTORY = [
+const FALLBACK_INVESTMENT_HISTORY = [
   { date: 'Jan', amount: 85000 }, { date: 'Feb', amount: 88000 },
   { date: 'Mar', amount: 86000 }, { date: 'Apr', amount: 92000 },
 ];
@@ -60,8 +60,84 @@ function App() {
     { id: 1, text: DEFAULT_AI_TEXT, sender: 'ai' }
   ]);
 
+  // --- NEW: Dynamic Header Totals ---
+  const [totalBudget, setTotalBudget] = useState<number>(0);
+  const [totalDebt, setTotalDebt] = useState<number>(MOCK_TOTAL_DEBT);
+  const [netWorth, setNetWorth] = useState<number>(MOCK_NET_WORTH);
+
+  // Graph Data States
+  const [budgetData, setBudgetData] = useState(FALLBACK_BUDGET_DATA);
+  const [debtHistory, setDebtHistory] = useState(FALLBACK_DEBT_HISTORY);
+  const [netWorthHistory, setNetWorthHistory] = useState(FALLBACK_NET_WORTH_HISTORY);
+  const [investmentHistory, setInvestmentHistory] = useState(FALLBACK_INVESTMENT_HISTORY);
+
   const chatInputRef = useRef<HTMLInputElement>(null);
 
+  // --- FETCH DATA FROM PYTHON BACKEND ---
+  useEffect(() => {
+    const fetchBackendData = async () => {
+      try {
+        const API_BASE_URL = 'http://localhost:8000'; // Default port for FastAPI
+
+        // 1. FETCH OVERALL BUDGET TOTAL
+        const budgetSummaryRes = await fetch(`${API_BASE_URL}/spend/summary`);
+        if (budgetSummaryRes.ok) {
+          const summaryData = await budgetSummaryRes.json();
+          // Updates the <h2> at the top of the Budget page
+          setTotalBudget(summaryData.total_spend || 0); 
+        }
+
+        // 2. FETCH BUDGET PIE CHART DATA (Top 5 Categories)
+        const budgetRes = await fetch(`${API_BASE_URL}/spend/top_categories?k=5`); 
+        if (budgetRes.ok) {
+          const rawBudgetData = await budgetRes.json();
+          const chartColors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+
+          const mappedBudget = rawBudgetData.map((item: any, index: number) => ({
+            category: item.Category,
+            amount: item.total_spend,
+            color: chartColors[index % chartColors.length]
+          }));
+          setBudgetData(mappedBudget);
+        }
+
+        // 3. FETCH CURRENT DEBT TOTAL
+        const debtListRes = await fetch(`${API_BASE_URL}/debt/list`);
+        if (debtListRes.ok) {
+          const debtList = await debtListRes.json();
+          // Adds up the balances of all current debts for the <h2> tag
+          const currentTotalDebt = debtList.reduce((sum: number, debt: any) => sum + debt.balance, 0);
+          setTotalDebt(currentTotalDebt);
+        }
+
+        // 4. FETCH DEBT PAYOFF DATA (Avalanche Strategy)
+        const debtRes = await fetch(`${API_BASE_URL}/debt/plan?schedule_months=12`);
+        if (debtRes.ok) {
+          const rawDebtData = await debtRes.json();
+          
+          if (rawDebtData.schedule_preview) {
+            const mappedDebt = rawDebtData.schedule_preview.map((monthData: any) => {
+              const totalRemainingBalance = monthData.debts.reduce(
+                (sum: number, debt: any) => sum + debt.ending_balance, 0
+              );
+              return {
+                date: `Month ${monthData.month}`,
+                amount: totalRemainingBalance
+              };
+            });
+            setDebtHistory(mappedDebt);
+          }
+        }
+
+      } catch (error) {
+        console.error("Failed to connect to backend. Showing fallback data.", error);
+      }
+    };
+
+    fetchBackendData();
+  }, []);
+
+  // Splash Screen Lifecycle
   useEffect(() => {
     const fadeTimer = setTimeout(() => {
       setFadeSplash(true);
@@ -77,6 +153,7 @@ function App() {
     };
   }, []);
   
+  // Chat Focus Lifecycle
   useEffect(() => {
     if (isChatOpen) {
       const timer = setTimeout(() => {
@@ -127,14 +204,12 @@ function App() {
     setIsChatOpen(false);
   };
 
-  // --- NEW: Calculates cursor position and feeds it to CSS ---
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
     const rect = target.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    // Injects the exact pixel coordinates into CSS variables
     target.style.setProperty('--mouse-x', `${x}px`);
     target.style.setProperty('--mouse-y', `${y}px`);
   };
@@ -143,10 +218,11 @@ function App() {
   const renderOverview = () => (
     <div className="page-container">
       <h1>Net Worth Overview</h1>
-      <h2>${MOCK_NET_WORTH.toLocaleString()} USD</h2>
+      {/* Uses the dynamic netWorth state */}
+      <h2>${netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD</h2>
       <div className="chart-container" style={{ height: '300px' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={MOCK_NET_WORTH_HISTORY}>
+          <LineChart data={netWorthHistory}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="date" axisLine={false} tickLine={false} />
             <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `$${v/1000}k`} />
@@ -161,18 +237,21 @@ function App() {
   const renderBudget = () => (
     <div className="page-container">
       <h1>Budgeting Overview</h1>
+      {/* NEW: Displays the total budget spent from your /spend/summary endpoint */}
+      <h2>${totalBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD Spent</h2>
+      
       <div className="chart-container" style={{ height: '350px', display: 'block' }}>
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie 
-              data={MOCK_BUDGET_DATA} 
+              data={budgetData} 
               dataKey="amount" 
               nameKey="category" 
               cx="50%" cy="45%" 
               innerRadius={70} outerRadius={100} 
               paddingAngle={5} stroke="none"
             >
-              {MOCK_BUDGET_DATA.map((entry, index) => <Cell key={`c-${index}`} fill={entry.color} />)}
+              {budgetData.map((entry, index) => <Cell key={`c-${index}`} fill={entry.color || '#36A2EB'} />)}
             </Pie>
             <Tooltip formatter={(value: any) => `$${value}`} />
             <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" />
@@ -190,10 +269,12 @@ function App() {
   const renderDebt = () => (
     <div className="page-container">
       <h1>Debt Helper</h1>
-      <h2>${MOCK_TOTAL_DEBT.toLocaleString()} USD Owed</h2>
+      {/* NEW: Displays the current real debt calculated from /debt/list */}
+      <h2>${totalDebt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD Owed</h2>
+      
       <div className="chart-container" style={{ height: '300px' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={MOCK_DEBT_HISTORY}>
+          <LineChart data={debtHistory}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="date" axisLine={false} tickLine={false} />
             <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `$${v/1000}k`} />
@@ -215,7 +296,7 @@ function App() {
       <h1>Investments</h1>
       <div className="chart-container" style={{ height: '300px' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={MOCK_INVESTMENT_HISTORY}>
+          <LineChart data={investmentHistory}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis dataKey="date" axisLine={false} tickLine={false} />
             <YAxis axisLine={false} tickLine={false} tickFormatter={(v) => `$${v/1000}k`} />
@@ -302,11 +383,8 @@ function App() {
         <div className={`nav-tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => handleTabChange('overview')}>Overview</div>
         <div className={`nav-tab ${activeTab === 'budget' ? 'active' : ''}`} onClick={() => handleTabChange('budget')}>Budget</div>
         
-        {/* --- UPDATED AI BUTTON --- */}
         <div className="nav-ai-input" onClick={() => openChatWithContext(DEFAULT_AI_TEXT)}>
-          {/* Attached the onMouseMove listener here */}
           <div className="ai-search-box" onMouseMove={handleMouseMove}>
-            {/* Wrapped text in a span so it stays clearly above the glow */}
             <span className="ai-search-text">Ask AI for anything...</span>
           </div>
         </div>
